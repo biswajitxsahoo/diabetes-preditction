@@ -5,7 +5,7 @@ import joblib
 import shap
 import matplotlib.pyplot as plt
 
-# 1. Page Configuration
+# 1. Page Config
 st.set_page_config(
     page_title="Explainable Diabetes Risk Predictor",
     page_icon="🩺",
@@ -15,24 +15,29 @@ st.set_page_config(
 st.title("🩺 Explainable AI (XAI) Diabetes Risk Screening Tool")
 st.markdown("""
 This screening tool uses a **Logistic Regression** model trained on balanced medical data (**SMOTE**) 
-to prioritize high recall (catching early risk). It uses **SHAP (SHapley Additive exPlanations)** 
-to explain *why* each prediction was made.
+to prioritize high recall (catching early risk)[cite: 1, 2]. It uses **SHAP (SHapley Additive exPlanations)** 
+to explain *why* each prediction was made[cite: 1, 2].
 """)
 
-# 2. Load Pre-trained Artifacts
+# 2. Load Artifacts from models/ directory
 @st.cache_resource
 def load_artifacts():
-    model = joblib.load('best_model.pkl')
-    scaler = joblib.load('scaler.pkl')
-    explainer = joblib.load('shap_explainer.pkl')
+    # Adjust paths if you moved them into models/, otherwise load from root
+    try:
+        model = joblib.load('models/best_model.pkl')
+        scaler = joblib.load('models/scaler.pkl')
+        explainer = joblib.load('models/shap_explainer.pkl')
+    except:
+        model = joblib.load('best_model.pkl')
+        scaler = joblib.load('scaler.pkl')
+        explainer = joblib.load('shap_explainer.pkl')
     return model, scaler, explainer
 
 model, scaler, explainer = load_artifacts()
 
-# Clinical Screening Threshold
 THRESHOLD = 0.35
 
-# 3. Sidebar Input Form
+# 3. Sidebar Inputs
 st.sidebar.header("📋 Patient Clinical Inputs")
 
 def get_user_inputs():
@@ -59,48 +64,54 @@ def get_user_inputs():
 
 input_df = get_user_inputs()
 
-# 4. Display Patient Features
+# 4. Display Inputs & Metrics
 st.subheader("Patient Clinical Profile")
 st.dataframe(input_df, use_container_width=True)
 
-# 5. Preprocess Input & Generate Prediction
 input_scaled = scaler.transform(input_df)
 input_scaled_df = pd.DataFrame(input_scaled, columns=input_df.columns)
 
-# Get risk probability
 risk_prob = model.predict_proba(input_scaled_df)[0][1]
 is_diabetic = risk_prob >= THRESHOLD
 
-# Display Results
 st.divider()
 col1, col2 = st.columns(2)
 
 with col1:
     if is_diabetic:
-        st.error(f"⚠️ **Screening Result: HIGH RISK (Diabetic)**")
+        st.error("⚠️ **Screening Result: HIGH RISK (Diabetic)**")
         st.caption("Patient exceeds clinical screening threshold (>35% risk). Follow-up testing recommended.")
     else:
-        st.success(f"✅ **Screening Result: LOW RISK (Non-Diabetic)**")
+        st.success("✅ **Screening Result: LOW RISK (Non-Diabetic)**")
         st.caption("Patient is below clinical screening threshold (<35% risk).")
 
 with col2:
     st.metric(label="Calculated Diabetes Risk Probability", value=f"{risk_prob * 100:.1f}%")
 
-# 6. Live SHAP Explanation Section
+# 5. Dynamic SHAP Visualizations
 st.divider()
-st.subheader("💡 Live SHAP Explanation (Why did the model predict this?)")
-st.markdown("""
-* **Red bars (+)** push patient risk **higher** towards Diabetic.
-* **Blue bars (-)** pull patient risk **lower** towards Healthy.
-""")
+st.subheader("💡 Model Interpretability & Feature Attribution (SHAP)")
 
-# Calculate SHAP values for current input
-shap_vals = explainer(input_scaled_df)
+tab1, tab2 = st.tabs(["🎯 Patient Local Explanation", "📊 Overall Dataset Feature Importance"])
 
-# Render Waterfall Plot
-fig, ax = plt.subplots(figsize=(9, 4.5))
-shap.plots.waterfall(shap_vals[0], show=False)
-plt.title("Patient-Level Risk Feature Attribution", fontsize=11, fontweight='bold')
-plt.tight_layout()
+with tab1:
+    st.markdown("#### Patient-Level Risk Factors (Waterfall Plot)")
+    st.caption("Red (+) increases risk towards Diabetic. Blue (-) decreases risk towards Healthy.")
+    
+    shap_vals = explainer(input_scaled_df)
+    
+    fig1, ax1 = plt.subplots(figsize=(9, 4.5))
+    shap.plots.waterfall(shap_vals[0], show=False)
+    plt.tight_layout()
+    st.pyplot(fig1)
 
-st.pyplot(fig)
+with tab2:
+    st.markdown("#### Global Feature Ranking Across Population")
+    st.caption("Shows which clinical features have the strongest overall impact across all patient data.")
+    
+    # Calculate global mean absolute SHAP values for current model
+    fig2, ax2 = plt.subplots(figsize=(9, 4.5))
+    # Render bar chart directly from local explainer values
+    shap.plots.bar(shap_vals[0], show=False)
+    plt.tight_layout()
+    st.pyplot(fig2)
