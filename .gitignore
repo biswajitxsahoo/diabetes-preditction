@@ -10,9 +10,10 @@ venv/
 .streamlit/
 
 # Models & binaries (keep structure via .gitkeep)
-models/*.pkl
-!models/.gitkeep
+*.pkl
 
 # IDEs
 .vscode/
 .idea/
+
+*.png
