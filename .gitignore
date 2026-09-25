@@ -1,0 +1,18 @@
+# Python environment & cache
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+.env
+
+# Streamlit config
+.streamlit/
+
+# Models & binaries (keep structure via .gitkeep)
+models/*.pkl
+!models/.gitkeep
+
+# IDEs
+.vscode/
+.idea/
