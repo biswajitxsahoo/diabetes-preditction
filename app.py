@@ -15,8 +15,8 @@ st.set_page_config(
 st.title("🩺 Explainable AI (XAI) Diabetes Risk Screening Tool")
 st.markdown("""
 This screening tool uses a **Logistic Regression** model trained on balanced medical data (**SMOTE**) 
-to prioritize high recall (catching early risk)[cite: 1, 2]. It uses **SHAP (SHapley Additive exPlanations)** 
-to explain *why* each prediction was made[cite: 1, 2].
+to prioritize high recall (catching early risk). It uses **SHAP (SHapley Additive exPlanations)** 
+to explain *why* each prediction was made.
 """)
 
 # 2. Load Artifacts from models/ directory
